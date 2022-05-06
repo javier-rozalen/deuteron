@@ -1,7 +1,8 @@
 # Solving the deuteron
 The machine learning part of the code in the files above is written in PyTorch. It does not come with the default Python 3 installation; to install it, go to [Official PyTorch page](https://pytorch.org/get-started/locally/) or type `pip3 install torch`.
 
-![This is an image](assets/s_d_wave_function.pdf)
+The steps below are a guide through the code files in this repository intended to go over the whole training process of the Neural Networks.
+
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## Step 0. 
