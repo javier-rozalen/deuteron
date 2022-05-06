@@ -4,6 +4,7 @@ GENERAL GUIDELINES
 
 Side note 1: the ? sign found throughout this document is to be substituded with the network architecture (and hyperparameters) chosen in Step 0.
 Side note 2: there are multiple adjustable parameters in each code file, all of them are explained at the beginning of their respective file.
+
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Step 0. We choose an architecture among the four appearing in the article (1sc, 2sc, 1sd, 2sd). 
