@@ -14,7 +14,7 @@ Step 1. We open 'pretraining/pretraining.py', which trains an ANN to match two w
 Step 2. We go back to the main folder and open 'deuteron.py', which trains the ANN to minimise the energy. A loop is already programmed that will sequentially load the pretrained models (Step 1). The code allows to split the total list of pretrained models into batches so as to seize parallelized computing (clusters). 
 By the end of this step we already have a fully trained model!
 
-Note: All steps below are devoted to error analysis and plotting.
+Note: All steps below are dedicated to error analysis and plotting.
 
 Step 3. We open 'error_analysis/error_measure.py', file with which we can automatically compute the errors of the trained models. A loop is already programmed that will sequentially load the trained models (Step 2).
 This will save E, Ks, Kd, Pd with their corresponding errors to error_data/nlayers?/nhid?.txt. 
