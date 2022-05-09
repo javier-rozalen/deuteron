@@ -32,7 +32,7 @@ class sc_1(nn.Module):
     def forward(self, x): 
         o = self.actfun(self.lc1(x))
         o = self.lc2(o)
-        return o.squeeze()[0],o.squeeze()[1]
+        return o.squeeze()
     
     
 class sc_2(nn.Module):
