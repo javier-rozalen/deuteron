@@ -34,6 +34,8 @@ Parameters to adjust manually:
     n_test --> int, Number of test mesh points.
     train_a --> float, Lower limit of momentum
     train_b --> float, Upper limit of momentum. It is set to q_max by default.
+    test_a --> float, Lower limit of test momentum.
+    test_b --> float, Upper limit of test momentum. 
     
     TRAINING HYPERPARAMETERS
     learning_rate --> float, Learning rate. Must be specified in decimal notation.
@@ -44,10 +46,10 @@ Parameters to adjust manually:
 
 ############################## ADJUSTABLE PARAMETERS #################################
 # General parameters
-network_arch = '2sd'
+network_arch = '1sc'
 device = 'cpu' 
-nchunks = 30
-which_chunk = int(sys.argv[1]) if nchunks != 1 else 0
+nchunks = 1
+which_chunk = 4 if nchunks != 1 else 0
 save_model = True  
 save_plot = True
 epochs = 2000
@@ -55,9 +57,8 @@ periodic_plots = False
 show_arch = False
 leap = 500
 hidden_neurons = [20,30,40,60,80,100] if network_arch != '2sd' else [20,32,40,60,80,100]
-seed_from = 150
-seed_to = 150+5000
-seeds = [i for i in range(seed_from,seed_to+1)]
+seed_from = 1
+seed_to = 21
 
 # Mesh parameters
 q_max = 500
@@ -65,6 +66,8 @@ n_samples = 64 # Do not change this.
 n_test = n_samples 
 train_a = 0
 train_b = q_max
+test_a = 0
+test_b = 5
 
 # Training hyperparameters
 learning_rate = 0.01 # Use decimal notation 
@@ -90,7 +93,7 @@ from modules.plotters import pretraining_plots
 
 ###################################### MISC. ######################################
 
-chunk_size = int(len(seeds)/nchunks)
+chunk_size = int(len(hidden_neurons)/nchunks)
 print(f'\nTraining model {network_arch}.')
 net_arch_name_map = {'1sc':'fully_connected_ann','2sc':'fully_connected_ann',
                      '1sd':'separated_ann','2sd':'separated_ann'}
@@ -134,6 +137,7 @@ w_i = [p*w_i[r]*cos2[r] for r in range(n_samples)]
 w_i = torch.stack(w_i)
 Q_train = torch.tensor(k) # Momentum mesh
 q_2 = Q_train**2 # Squared momentum mesh
+Q_test = Q_train
 
 ###################################### TARGET FUNCTION ######################################
 psi_ansatz_s = torch.exp((-1.5**2)*Q_train**2/2) # target function L=0
@@ -145,136 +149,141 @@ norm_d = integration.gl64(w_i,q_2*(psi_ansatz_d**2))
 psi_ansatz_s_normalized = psi_ansatz_s/torch.sqrt(norm_s)
 psi_ansatz_d_normalized = psi_ansatz_d/torch.sqrt(norm_d)
 
+
 ##################################### LOOP OVER HIDDEN NEURONS,SEEDS MODELS #####################################
 hn_number = 0
 start_time_all = time.time()
-for j in chunks(seeds,chunk_size)[which_chunk]:        
-    seed,Nhid = j,20
-    print("\nNeurons = {}, Seed = {}/{}".format(j,seed,seed_to))
-    torch.manual_seed(seed)
-
-    # ANN Parameters
-    if network_arch == '1sc':
-        Nhid_prime = Nhid
-    elif network_arch == '2sc' or network_arch == '1sd':
-        Nhid_prime = int(Nhid/2)
-    elif network_arch == '2sd':
-        Nhid_prime = int(Nhid/4)
+for j in chunks(hidden_neurons,chunk_size)[which_chunk]:
+    """"We iterate over all the hidden neurons numbers."""
+    for i in range(seed_from,seed_to+1):
+        """"We iterate over all seeds for a given Nhid."""
         
-    Nin = 1
-    Nout = 1 if network_arch == '2sd' else 2 
-    W1 = torch.rand(Nhid_prime,Nin,requires_grad=True)*(-1.) 
-    B = torch.rand(Nhid_prime)*2.-torch.tensor(1.) 
-    W2 = torch.rand(Nout,Nhid_prime,requires_grad=True) 
-    Ws2 = torch.rand(1,Nhid_prime,requires_grad=True) 
-    Wd2 = torch.rand(1,Nhid_prime,requires_grad=True) 
+        seed,Nhid = i,j
+        print("\nNeurons = {}, Seed = {}/{}".format(j,seed,seed_to))
+        torch.manual_seed(seed)
     
-    # We load our psi_ann to the CPU (or GPU)
-    net_arch_map = {'1sc':neural_networks.sc_1,'2sc':neural_networks.sc_2,
-                    '1sd':neural_networks.sd_1,'2sd':neural_networks.sd_2}
-    psi_ann = net_arch_map[network_arch](Nin,Nhid_prime,Nout,W1,Ws2,B,W2,Wd2).to(device)
-    if show_arch:
-        print("NN architecture:\n",psi_ann)
-        neural_networks.show_layers(psi_ann)
-    
-    ################### COST FUNCTION ###################
-    def cost():
-        """Returns the cost, which is computed from the overlap between the network"""                      
-        global psi_s_pred,psi_d_pred
-        ann = psi_ann(Q_train.clone().unsqueeze(1))
-        if network_arch[2] == 'c':
-            ann1,ann2 = ann[:,:1].squeeze(),ann[:,1:].squeeze()
+        # ANN Parameters
+        if network_arch == '1sc':
+            Nhid_prime = Nhid
+        elif network_arch == '2sc' or network_arch == '1sd':
+            Nhid_prime = int(Nhid/2)
+        elif network_arch == '2sd':
+            Nhid_prime = int(Nhid/4)
+            
+        Nin = 1
+        Nout = 1 if network_arch == '2sd' else 2 
+        W1 = torch.rand(Nhid_prime,Nin,requires_grad=True)*(-1.) 
+        B = torch.rand(Nhid_prime)*2.-torch.tensor(1.) 
+        W2 = torch.rand(Nout,Nhid_prime,requires_grad=True) 
+        Ws2 = torch.rand(1,Nhid_prime,requires_grad=True) 
+        Wd2 = torch.rand(1,Nhid_prime,requires_grad=True) 
+        
+        # We load our psi_ann to the CPU (or GPU)
+        net_arch_map = {'1sc':neural_networks.sc_1,'2sc':neural_networks.sc_2,
+                        '1sd':neural_networks.sd_1,'2sd':neural_networks.sd_2}
+        psi_ann = net_arch_map[network_arch](Nin,Nhid_prime,Nout,W1,Ws2,B,W2,Wd2).to(device)
+        if show_arch:
+            print("NN architecture:\n",psi_ann)
+            neural_networks.show_layers(psi_ann)
+        
+        ################### COST FUNCTION ###################
+        def cost():
+            """Returns the cost, which is computed from the overlap between the network"""                      
+            global psi_s_pred,psi_d_pred
+            ann = psi_ann(Q_train.clone().unsqueeze(1))
+            if network_arch[2] == 'c':
+                ann1,ann2 = ann[:,:1].squeeze(),ann[:,1:].squeeze()
+            else:
+                ann1,ann2 = ann[0],ann[1]
+            
+            global k_s
+            num = ann1*psi_ansatz_s*q_2
+            denom1 = q_2*(ann1**2) 
+            nume = (integration.gl64(w_i,num))**2
+            den1 = integration.gl64(w_i,denom1)
+            den2 = norm_s
+            k_s = nume/(den1*den2)
+            c_s = (k_s-torch.tensor(1.))**2
+            norm_s_ann = den1
+            
+            # C(L=2)
+            global k_d
+            num = ann2*psi_ansatz_d*q_2
+            denom1 = q_2*(ann2**2) 
+            nume = (integration.gl64(w_i,num))**2
+            den1 = integration.gl64(w_i,denom1)
+            den2 = norm_d
+            k_d = nume/(den1*den2)
+            c_d = (k_d-torch.tensor(1.))**2
+            norm_d_ann = den1
+            
+            psi_s_pred = ann1/torch.sqrt(norm_s_ann)
+            psi_d_pred = ann2/torch.sqrt(norm_d_ann)
+            
+            return c_s+c_d
+          
+        ################################ EPOCH LOOP ##################################
+        loss_fn = cost
+        optimizer = torch.optim.RMSprop(params=psi_ann.parameters(),lr=learning_rate,eps=epsilon,
+                                        alpha=smoothing_constant,momentum=momentum)
+        
+        def train_loop(loss_fn,optimizer):
+            """Trains the Neural Network over the training dataset"""    
+            optimizer.zero_grad()
+            loss_fn().backward()
+            optimizer.step()
+                    
+        sep = "("
+        path_model = "../saved_models/pretraining/nlayers{}/{}/Sigmoid/lr{}/models/nhid{}_epoch{}_seed{}_lr{}_actfun{}_optimizer{}".format(network_arch[0],net_arch_name_map[network_arch],learning_rate,Nhid,epochs,seed,learning_rate,
+                                                                                      str(psi_ann.actfun).split(sep,1)[0].strip(),
+                                                                                      str(optimizer).split(sep,1)[0].strip())
+        path_plot = "../saved_models/pretraining/nlayers{}/{}/Sigmoid/lr{}/plots/nhid{}_epoch{}_seed{}_lr{}_actfun{}_optimizer{}".format(network_arch[0],net_arch_name_map[network_arch],learning_rate,Nhid,epochs,seed,learning_rate,
+                                                                                      str(psi_ann.actfun).split(sep,1)[0].strip(),
+                                                                                      str(optimizer).split(sep,1)[0].strip())
+        
+        saved_models_dir = f'../saved_models/pretraining/nlayers{network_arch[0]}/{net_arch_name_map[network_arch]}/Sigmoid/lr{learning_rate}/models/'
+        name_without_dirs = 'nhid{}_epoch{}_seed{}_lr{}_actfun{}_optimizer{}.pt'.format(Nhid,epochs,seed,learning_rate,
+                                                                                      str(psi_ann.actfun).split(sep,1)[0].strip(),
+                                                                                      str(optimizer).split(sep,1)[0].strip())
+
+        if name_without_dirs not in os.listdir(saved_models_dir): 
+            # We store the energy data in lists for later plotting
+            overlap_s,overlap_d = [],[]
+            
+            start_time = time.time()
+            for t in tqdm(range(epochs)):  
+                train_loop(loss_fn,optimizer)
+                overlap_s.append(k_s.item())
+                overlap_d.append(k_d.item())
+            
+                if ((t+1)%leap)==0:
+                    if periodic_plots:
+                        pretraining_plots(Q_test,psi_s_pred,psi_d_pred,n_test,n_samples,psi_ansatz_s_normalized,psi_ansatz_d_normalized,
+                                              overlap_s,overlap_d,path_plot,t,False) 
+            
+                if t == epochs-1:
+                    exec_time = "{:2.0f}".format(time.time()-start_time)
+                    pretraining_plots(Q_test,psi_s_pred,psi_d_pred,n_test,n_samples,psi_ansatz_s_normalized,psi_ansatz_d_normalized,
+                                          overlap_s,overlap_d,path_plot,t,save_plot,exec_time)
+                    
+            print('Model pretrained!')
+            print('Total execution time:  {:6.2f} seconds (run on {})'.format(time.time()-start_time_all,device))
+            
+            full_path_model = '{}.pt'.format(path_model)
+            full_path_plot = '{}.png'.format(path_plot)
+            
+            if save_model == True:
+                state_dict = {'model_state_dict':psi_ann.state_dict(),
+                              'optimizer_state_dict':optimizer.state_dict()}
+                torch.save(state_dict,full_path_model)
+                print(f'Model saved in {full_path_model}')
+            if save_plot: 
+                print('Plot saved in {}'.format(path_plot))
+            
         else:
-            ann1,ann2 = ann[0],ann[1]
-        
-        global k_s
-        num = ann1*psi_ansatz_s*q_2
-        denom1 = q_2*(ann1**2) 
-        nume = (integration.gl64(w_i,num))**2
-        den1 = integration.gl64(w_i,denom1)
-        den2 = norm_s
-        k_s = nume/(den1*den2)
-        c_s = (k_s-torch.tensor(1.))**2
-        norm_s_ann = den1
-        
-        # C(L=2)
-        global k_d
-        num = ann2*psi_ansatz_d*q_2
-        denom1 = q_2*(ann2**2) 
-        nume = (integration.gl64(w_i,num))**2
-        den1 = integration.gl64(w_i,denom1)
-        den2 = norm_d
-        k_d = nume/(den1*den2)
-        c_d = (k_d-torch.tensor(1.))**2
-        norm_d_ann = den1
-        
-        psi_s_pred = ann1/torch.sqrt(norm_s_ann)
-        psi_d_pred = ann2/torch.sqrt(norm_d_ann)
-        
-        return c_s+c_d
-      
-    ################################ EPOCH LOOP ##################################
-    loss_fn = cost
-    optimizer = torch.optim.RMSprop(params=psi_ann.parameters(),lr=learning_rate,eps=epsilon,
-                                    alpha=smoothing_constant,momentum=momentum)
-    
-    def train_loop(loss_fn,optimizer):
-        """Trains the Neural Network over the training dataset"""    
-        optimizer.zero_grad()
-        loss_fn().backward()
-        optimizer.step()
-                
-    sep = "("
-    path_model = "../saved_models/pretraining/nlayers{}/{}/Sigmoid/lr{}/models/nhid{}_epoch{}_seed{}_lr{}_actfun{}_optimizer{}".format(network_arch[0],net_arch_name_map[network_arch],learning_rate,Nhid,epochs,seed,learning_rate,
-                                                                                  str(psi_ann.actfun).split(sep,1)[0].strip(),
-                                                                                  str(optimizer).split(sep,1)[0].strip())
-    path_plot = "../saved_models/pretraining/nlayers{}/{}/Sigmoid/lr{}/plots/nhid{}_epoch{}_seed{}_lr{}_actfun{}_optimizer{}".format(network_arch[0],net_arch_name_map[network_arch],learning_rate,Nhid,epochs,seed,learning_rate,
-                                                                                  str(psi_ann.actfun).split(sep,1)[0].strip(),
-                                                                                  str(optimizer).split(sep,1)[0].strip())
-    
-    saved_models_dir = f'../saved_models/pretraining/nlayers{network_arch[0]}/{net_arch_name_map[network_arch]}/Sigmoid/lr{learning_rate}/models/'
-    name_without_dirs = 'nhid{}_epoch{}_seed{}_lr{}_actfun{}_optimizer{}.pt'.format(Nhid,epochs,seed,learning_rate,
-                                                                                  str(psi_ann.actfun).split(sep,1)[0].strip(),
-                                                                                  str(optimizer).split(sep,1)[0].strip())
-
-    if name_without_dirs not in os.listdir(saved_models_dir): 
-        # We store the energy data in lists for later plotting
-        overlap_s,overlap_d = [],[]
-        
-        start_time = time.time()
-        for t in tqdm(range(epochs)):  
-            train_loop(loss_fn,optimizer)
-            overlap_s.append(k_s.item())
-            overlap_d.append(k_d.item())
-        
-            if ((t+1)%leap)==0:
-                if periodic_plots:
-                    pretraining_plots(Q_train,psi_s_pred,psi_d_pred,n_test,n_samples,psi_ansatz_s_normalized,psi_ansatz_d_normalized,
-                                          overlap_s,overlap_d,path_plot,t,False) 
-        
-            if t == epochs-1:
-                exec_time = "{:2.0f}".format(time.time()-start_time)
-                pretraining_plots(Q_train,psi_s_pred,psi_d_pred,n_test,n_samples,psi_ansatz_s_normalized,psi_ansatz_d_normalized,
-                                      overlap_s,overlap_d,path_plot,t,save_plot,exec_time)
-                
-        print('Model pretrained!')
-        print('Total execution time:  {:6.2f} seconds (run on {})'.format(time.time()-start_time_all,device))
-        
-        full_path_model = '{}.pt'.format(path_model)
-        full_path_plot = '{}.png'.format(path_plot)
-        
-        if save_model == True:
-            state_dict = {'model_state_dict':psi_ann.state_dict(),
-                          'optimizer_state_dict':optimizer.state_dict()}
-            torch.save(state_dict,full_path_model)
-            print(f'Model saved in {full_path_model}')
-        if save_plot: 
-            print('Plot saved in {}'.format(path_plot))
-        
-    else:
-        print(f'Skipping already pretrained model {name_without_dirs}...')
-        
-    hn_number += 1
+            print(f'Skipping already pretrained model {name_without_dirs}...')
+            
+        hn_number += 1
     
 print("\nAll done! :)")
    
