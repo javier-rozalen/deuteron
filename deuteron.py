@@ -42,16 +42,16 @@ Parameters to adjust manually:
 
 ############################## ADJUSTABLE PARAMETERS #################################
 # General parameters
-network_arch = '2sd'
+network_arch = '1sc'
 device = 'cpu' 
 nchunks = 1
 which_chunk = 0 if nchunks != 1 else 0
-save_model = True  
-save_plot = True
-epochs = 5000
+save_model = False  
+save_plot = False
+epochs = 250000
 periodic_plots = True
 show_arch = False
-leap = epochs/5
+leap = 5000
 
 # Mesh parameters
 q_max = 500
@@ -166,8 +166,8 @@ with open('deuteron_data/wfk_exact_diagonalization.txt','r') as file:
 
 psi_exact_s = torch.stack(psi_exact_s)
 psi_exact_d = torch.stack(psi_exact_d)
-psi_exact_s_norm = integration.gl64(q_2*(psi_exact_s)**2,w_i)
-psi_exact_d_norm = integration.gl64(q_2*(psi_exact_d)**2,w_i)
+psi_exact_s_norm = integration.gl64(w_i,q_2*(psi_exact_s)**2)
+psi_exact_d_norm = integration.gl64(w_i,q_2*(psi_exact_d)**2)
 psi_exact_s_normalized = psi_exact_s/torch.sqrt(psi_exact_s_norm+psi_exact_d_norm)
 psi_exact_d_normalized = psi_exact_d/torch.sqrt(psi_exact_s_norm+psi_exact_d_norm)
 
@@ -232,14 +232,13 @@ for file in chunks(list_of_pretrained_models,chunk_size)[which_chunk]:
         """Returns the cost computed as the expected energy using the current wavefunction (ANN)
         Also returns the overlap with the theoretical wavefunction"""
         global ann_s,ann_d,norm2,K,U,E,ks,kd,pd
-        ann_s1,ann_d1 = [],[] # Wavefunction 
-        for i in range(n_samples):
-            v = psi_ann(Q_train[i].unsqueeze(0))
-            ann_s1.append(v[0])
-            ann_d1.append(v[1])
-        ann1 = torch.stack(ann_s1)  
-        ann2 = torch.stack(ann_d1)
-        
+
+        ann = psi_ann(Q_train.clone().unsqueeze(1))
+        if network_arch[2] == 'c':
+            ann1,ann2 = ann[:,:1].squeeze(),ann[:,1:].squeeze()
+        else:
+            ann1,ann2 = ann[0],ann[1]
+
         # Norm
         norm_s = integration.gl64(q_2*(ann1)**2,w_i)
         norm_d = integration.gl64(q_2*(ann2)**2,w_i)    
