@@ -139,7 +139,6 @@ w_i = [p*w_i[r]*cos2[r] for r in range(n_samples)]
 w_i = torch.stack(w_i)
 Q_train = torch.tensor(k) # Momentum mesh
 q_2 = Q_train**2 # Squared momentum mesh
-Q_test = torch.linspace(test_a,test_b,n_test)
 
 ###################################### BENCHMARK DATA FETCHING/COMPUTATION ######################################
 # N3LO potential
@@ -234,14 +233,12 @@ for model in tqdm(iterable=chunks(list_of_trained_models,chunk_size)[which_chunk
         Also returns the overlap with the theoretical wavefunction"""
         # Wavefunction 
         global ann_s,ann_d,norm2,K,U,E,ks,kd,pd
-        ann_s1 = []
-        ann_d1 = []
-        for i in range(n_samples):
-            v = psi_ann(Q_train[i].unsqueeze(0))
-            ann_s1.append(v[0])
-            ann_d1.append(v[1])
-        ann1 = torch.stack(ann_s1)  
-        ann2 = torch.stack(ann_d1)
+        
+        ann = psi_ann(Q_train.clone().unsqueeze(1))
+        if network_arch[2] == 'c':
+            ann1,ann2 = ann[:,:1].squeeze(),ann[:,1:].squeeze()
+        else:
+            ann1,ann2 = ann[0],ann[1]
         
         # Norm 
         norm_s = integration.gl64(w_i,q_2*(ann1)**2)
