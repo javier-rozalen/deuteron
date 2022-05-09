@@ -10,7 +10,7 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
-def pretraining_plots(psi_s_pred,psi_d_pred,n_test,n_samples,psi_ansatz_s_normalized,psi_ansatz_d_normalized,
+def pretraining_plots(x_axis,psi_s_pred,psi_d_pred,n_test,n_samples,psi_ansatz_s_normalized,psi_ansatz_d_normalized,
                       overlap_s,overlap_d,path_plot,t,s,exec_time=0.):
     plt.figure(figsize=(12,10))
     plt.subplots_adjust(wspace=0.25,hspace=0.35)
@@ -22,8 +22,8 @@ def pretraining_plots(psi_s_pred,psi_d_pred,n_test,n_samples,psi_ansatz_s_normal
     plt.ylabel("$\psi\,(L=0)$",fontsize=15)
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
-    plt.plot(np.linspace(0,5,n_test),[e.item() for e in psi_s_pred],label='$\psi_{\mathrm{ANN}}$')
-    plt.plot(np.linspace(0,5,n_samples),psi_ansatz_s_normalized.tolist(),label='$\psi_{\mathrm{targ}}$')
+    plt.plot(x_axis[:57],psi_s_pred.detach()[:57],label='$\psi_{\mathrm{ANN}}$')
+    plt.plot(x_axis[:57],psi_ansatz_s_normalized.tolist()[:57],label='$\psi_{\mathrm{targ}}$')
     plt.legend(fontsize=15)
     
     # Overlap (L=0)
@@ -43,8 +43,8 @@ def pretraining_plots(psi_s_pred,psi_d_pred,n_test,n_samples,psi_ansatz_s_normal
     plt.ylabel("$\psi\,(L=2)$",fontsize=15)
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
-    plt.plot(np.linspace(0,5,n_test),[e.item() for e in psi_d_pred],label='$\psi_{\mathrm{ANN}}$')
-    plt.plot(np.linspace(0,5,n_samples),psi_ansatz_d_normalized.tolist(),label='$\psi_{\mathrm{targ}}$')
+    plt.plot(x_axis[:57],psi_d_pred.detach()[:57],label='$\psi_{\mathrm{ANN}}$')
+    plt.plot(x_axis[:57],psi_ansatz_d_normalized.tolist()[:57],label='$\psi_{\mathrm{targ}}$')
     plt.legend(fontsize=15)
     
     # Overlap (L=2)
