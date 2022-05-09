@@ -34,8 +34,6 @@ Parameters to adjust manually:
     n_test --> int, Number of test mesh points.
     train_a --> float, Lower limit of momentum
     train_b --> float, Upper limit of momentum. It is set to q_max by default.
-    test_a --> float, Lower limit of test momentum.
-    test_b --> float, Upper limit of test momentum. 
     
     TRAINING HYPERPARAMETERS
     learning_rate --> float, Learning rate. Must be specified in decimal notation.
@@ -66,8 +64,6 @@ n_samples = 64 # Do not change this.
 n_test = n_samples 
 train_a = 0
 train_b = q_max
-test_a = 0
-test_b = 5
 
 # Training hyperparameters
 learning_rate = 0.01 # Use decimal notation 
