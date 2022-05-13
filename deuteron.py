@@ -11,7 +11,7 @@ The models are saved in the saved_models/n3lo/ folder.
 
 Parameters to adjust manually:
     GENERAL PARAMETERS
-    network_arch --> '1sc', '2sc', '1sd', '2sd'. Network architecture
+    network_arch --> '1sc', '2sc', '1sd', '2sd'. Network architecture.
     device --> 'cpu', 'cuda', Physical processing unit into which we load our model.
     path_to_pretrained_model --> str, Path where the pretrained models are located.
     nchunks --> int, Number of batches of pretrained models.
@@ -28,16 +28,16 @@ Parameters to adjust manually:
     leap --> int, Number of epochs between updates and/or plots.
     
     MESH PARAMETERS 
-    q_max --> float, Maximum value of the momentum axis
+    q_max --> float, Maximum value of the momentum axis.
     n_samples --> int, Number of mesh points. DO NOT CHANGE THE DEFAULT VALUE (64).
-    train_a --> float, Lower limit of momentum
+    train_a --> float, Lower limit of momentum.
     train_b --> float, Upper limit of momentum. It is set to q_max by default.
     
     TRAINING HYPERPARAMETERS
     learning_rate --> float, Learning rate. Must be specified in decimal notation.
-    epsilon --> float, It appears in RMSProp and other optimizers
-    smoothing_constant --> float, It appears in RMSProp and other optimizers
-    momentum --> float, Momentum of the optimizer
+    epsilon --> float, It appears in RMSProp and other optimizers.
+    smoothing_constant --> float, It appears in RMSProp and other optimizers.
+    momentum --> float, Momentum of the optimizer.
 """
 
 ############################## ADJUSTABLE PARAMETERS #################################
