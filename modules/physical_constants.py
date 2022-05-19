@@ -1,10 +1,4 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue May  3 10:05:32 2022
-
-@author: jozalen
-"""
 
 import math
 
