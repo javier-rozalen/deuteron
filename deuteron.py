@@ -83,25 +83,17 @@ import modules.N3LO as N3LO
 import modules.integration as integration
 import modules.neural_networks as neural_networks
 from modules.plotters import minimisation_plots
+from modules.dir_support import dir_support
 
 ###################################### PRETRAINED MODELS PREPARATION ######################################
 net_arch_name_map = {'1sc':'fully_connected_ann','2sc':'fully_connected_ann',
                      '1sd':'separated_ann','2sd':'separated_ann'}
 
 # Directory management and creation
-path_steps_models = ['saved_models','n3lo',f'nlayers{network_arch[0]}',f'{net_arch_name_map[network_arch]}',
-              'Sigmoid',f'lr{learning_rate}','models']
-path_steps_plots = ['saved_models','n3lo',f'nlayers{network_arch[0]}',f'{net_arch_name_map[network_arch]}',
-              'Sigmoid',f'lr{learning_rate}','plots']
-for i in range(len(path_steps_models)):
-    potential_dir_models = '/'.join(path_steps_models[:i+1])
-    potential_dir_plots = '/'.join(path_steps_plots[:i+1])
-    if not os.path.exists(potential_dir_models):
-        os.makedirs(potential_dir_models)
-        print(f'Creating directory {potential_dir_models}.')
-    if not os.path.exists(potential_dir_plots):
-        os.makedirs(potential_dir_plots)
-        print(f'Creating directory {potential_dir_plots}.')
+dir_support(['saved_models','n3lo',f'nlayers{network_arch[0]}',f'{net_arch_name_map[network_arch]}',
+              'Sigmoid',f'lr{learning_rate}','models'])
+dir_support(path_steps_plots = ['saved_models','n3lo',f'nlayers{network_arch[0]}',f'{net_arch_name_map[network_arch]}',
+              'Sigmoid',f'lr{learning_rate}','plots'])
         
 path_to_pretrained_model = '/'.join(['saved_models','pretraining',f'nlayers{network_arch[0]}',
                                      f'{net_arch_name_map[network_arch]}','Sigmoid',
