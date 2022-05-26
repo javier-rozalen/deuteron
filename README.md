@@ -36,9 +36,3 @@ For a complete plot including data of the four architectures, we repeat Steps 1 
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-#### Side note 1: 
-The ? sign found throughout this document is to be substituded with the network architecture (and hyperparameters) chosen in Step 0.
-
-#### Side note 2: 
-There are multiple adjustable parameters in each code file, all of them are explained at the beginning of their respective file.
-
