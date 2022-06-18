@@ -92,7 +92,7 @@ net_arch_name_map = {'1sc':'fully_connected_ann','2sc':'fully_connected_ann',
 # Directory management and creation
 dir_support(['saved_models','n3lo',f'nlayers{network_arch[0]}',f'{net_arch_name_map[network_arch]}',
               'Sigmoid',f'lr{learning_rate}','models'])
-dir_support(path_steps_plots = ['saved_models','n3lo',f'nlayers{network_arch[0]}',f'{net_arch_name_map[network_arch]}',
+dir_support(['saved_models','n3lo',f'nlayers{network_arch[0]}',f'{net_arch_name_map[network_arch]}',
               'Sigmoid',f'lr{learning_rate}','plots'])
         
 path_to_pretrained_model = '/'.join(['saved_models','pretraining',f'nlayers{network_arch[0]}',
