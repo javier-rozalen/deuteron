@@ -29,7 +29,7 @@ Note: the steps below are dedicated to error analysis and plotting.
 We open 'error_analysis/error_measure.py', file with which we can automatically compute the errors of the trained models. A loop is already programmed that will sequentially load the trained models (Step 2). This will save E, Ks, Kd, Pd with their corresponding errors to error_data/nlayers?/nhid?.txt. 
 
 ### Step 4. Filtering the good runs.
-We open error_analysis/filter.py and adjust the initial parameters. This program filters the trained models and selects the ones that match our criteria (defined via the initial parameters). The selected runs are copied in a folder named filtered_runs. This step is thought to make plotting easier.
+We open error_analysis/filter.py and adjust the initial parameters. This program filters the trained models and selects the ones that match our criteria (defined via the initial parameters). The selected runs are copied in a folder named filtered_runs. This step is meant to make plotting easier.
 
 ### Step 5. Plotting.
 For a complete plot including data of the four architectures, we repeat Steps 1 to 4 for all architectures (Step 0). After that, we open 'plotting/energy_plot.py'. We set the initial parameters and we run the file. Text files under plotting/plotting_data/ with further errors will be generated in the process. Once the program is done, the resulting plot will be stored in plotting/saved_plots/energy_plot.pdf
