@@ -108,7 +108,7 @@ leap = 500
 # The code handles the 30 <--> 32 conversion in hidden neurons
 hidden_neurons = [20, 30, 40, 60, 80, 100] 
 seed_from = 0
-seed_to = 500
+seed_to = 150
 recompute = False
 
 # Mesh parameters
@@ -191,43 +191,35 @@ for arch, Nhid, optim, actfun, lr, alpha, mom in product(net_archs,
     epochs = epochs_general            
         
     # We restrict the pretraining to a specific hyperparameter configuration
-    # Default hyperparams
-    if not (    (arch == '1sd' and
-            Nhid == 60 and
-            actfun == 'Sigmoid' and
-            lr == 0.05 and
-            alpha == 0.9 and
-            mom == 0.0) or 
-                (arch == '1sd' and
-            Nhid == 60 and
-            actfun == 'Softplus' and
-            lr == 0.01 and
-            alpha == 0.9 and
-            mom == 0.0) or
-                (arch == '1sd' and
-            Nhid == 60 and
-            actfun == 'ReLU' and
-            lr == 0.01 and
-            alpha == 0.9 and
-            mom == 0.0) or
-               (arch == '2sd' and
-            Nhid == 20 and
-            actfun == 'Sigmoid' and
-            lr == 0.01 and
-            alpha == 0.9 and
-            mom == 0.0) or
-                (arch == '2sd' and
-            Nhid == 60 and
-            actfun == 'Sigmoid' and
-            lr == 0.01 and
-            alpha == 0.9 and
-            mom == 0.9) or
-                (arch == '2sd' and
-            Nhid == 60 and
-            actfun == 'Sigmoid' and
-            lr == 0.05 and
-            alpha == 0.9 and
-            mom == 0.0)):
+            # Default hyperparams
+    if not ((optim == default_optim and
+             actfun == default_actfun and
+             lr == default_lr and
+             alpha == default_alpha and
+             mom == default_momentum) or
+            (Nhid == 60 and
+            # Variable lr
+            ((optim == default_optim and
+            actfun == default_actfun and
+            alpha == default_alpha and
+            mom == default_momentum) or
+            # Variable actfun
+            (optim == default_optim and
+            lr == default_lr and
+            alpha == default_alpha and
+            mom == default_momentum) or
+            # Variable alpha
+            (optim == default_optim and
+            actfun == default_actfun and
+            lr == default_lr and
+            mom == default_momentum) or    
+            # Variable momentum
+            (optim == default_optim and
+            actfun == default_actfun and
+            lr == default_lr and
+            alpha == default_alpha and not
+            (arch == '2sd' and mom == 0.9))))):
+        # print('Skipping non-whitelisted hyperparam combination...')
         continue
     
     # Directory support

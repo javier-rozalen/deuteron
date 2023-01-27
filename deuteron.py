@@ -106,8 +106,8 @@ net_archs = ['1sc', '2sc', '1sd', '2sd']
 device = 'cpu' 
 nchunks_general = 1
 which_chunk = int(sys.argv[1]) if nchunks_general != 1 else 0
-save_model = False  
-save_plot = False
+save_model = True  
+save_plot = True
 epochs_general = 250000 
 periodic_plots = False
 show_arch = False
