@@ -22,6 +22,8 @@ We open the script 'pretraining.py'. This file trains an ANN to match two wave f
 ### Step 2. Training.
 We now open the script 'deuteron.py'. This file trains the ANN to minimise the energy. A loop is already programmed that will sequentially load the pretrained models (Step 1). The code allows to split the total list of pretrained models into batches so as to seize parallelized computing (clusters). The models thusly trained are automatically stored (if desired) in 'saved_models/n3lo/...'. By the end of this step we already have a fully trained model.
 
+![plot](./example_plots/training.png)
+
 Note: the steps below are dedicated to error analysis and plotting.
 
 ### Step 3. Error analysis.
