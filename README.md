@@ -1,4 +1,5 @@
 # Solving the deuteron
+This repository contains the code used to generate the results in this [article](https://doi.org/10.1140/epjp/s13360-024-04983-w) (published in [EPJ Plus](https://link.springer.com/journal/13360)).
 
 ## Requirements
 The machine learning part of the code in the files above is written in PyTorch. It does not come with the default Python 3 installation; to install it, go to [Official PyTorch page](https://pytorch.org/get-started/locally/) or type:
