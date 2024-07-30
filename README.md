@@ -38,9 +38,9 @@ In order to generate FIG. 3 in the article, we can run the script `error_analysi
 We run the script `error_analysis/filter.py` with the desired arguments. This program filters the trained models and selects the ones that match our criteria (defined via the initial parameters). The selected runs are copied in a folder named `filtered_runs/` found under the `error_analysis/error_data/` folder.
 
 ### Step 5. Convergence rates.
-We run the script `error_analysis/convergence_rate.py` with the desired arguments. This file will compute the energy errors and convergence rate of the specified models and store this data under the `error_analysis/error_data/...` folder. This step generates the data needed for FIG. 2 of the paper and Tables II and III.
+We run the script `error_analysis/convergence_rate/convergence_rate.py` with the desired arguments. This file will compute the energy errors and convergence rate of the specified models and store this data under the `error_analysis/error_data/...` folder. This step generates the data needed for FIG. 2 of the paper and Tables II and III.
 
-In order to generate FIG. 2 in the article, we can run the script `error_analysis/convergence_rate_plot.py`, and this will generate the figure and store it in `saved_plots/convergence_rate.pdf`.
+In order to generate FIG. 2 in the article, we can run the script `error_analysis/convergence_rate/convergence_rate_plot.py`, and this will generate the figure and store it in `saved_plots/convergence_rate.pdf`.
 
 ![plot](./example_plots/convergence_rate.png)
 
