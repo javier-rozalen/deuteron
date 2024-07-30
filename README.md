@@ -52,7 +52,7 @@ In order to generate FIG. 4 in the article, we run the script `energy_fidelity_p
 ### Step 7. Plotting wave functions and their variances.
 We run the script `error_analysis/wf_variance/wf_var.py` with the desired arguments. This file will generate data in the same folder where it is located, which is necessary to generate FIGs. 5 and 6 of the paper.
 
-In order to generate FIG. 5 in the article we open the script `error_analysis/wf_variance/var_plot_wf.py`, set the initial parameters and run the file. This will generate the figure and store it in `saved_plots/wf_variance_wf.pdf`. 
+In order to generate FIG. 5 in the article we run the script `error_analysis/wf_variance/var_plot_wf.py` with the desired arguments. This will generate the figure and store it in `saved_plots/wf_variance_wf.pdf`. 
 
 ![plot](./example_plots/wf_var_wf.png)
 
