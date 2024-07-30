@@ -7,57 +7,6 @@ hidden neurons in total. A 64-points (preferentially) tangential mesh is used
 as the momentum space upon which we train the ANN. The potential used is N3LO.
 The models are saved under the 'saved_models/n3lo/' folder.
 
-· In Section ADJUSTABLE PARAMETERS we can set the values of the variables 
-according to our preferences. Below is an explanation of what each variable 
-does.
-
-    GENERAL PARAMETERS
-    -----------------------------------
-    net_archs --> List, Can contain any combination of the elements '1sc', 
-                '2sc', '1sd', '2sd'. Each element is a network architecture.
-    device --> 'cpu', 'cuda', Physical processor into which we load our model.
-    nchunks_general --> int, Number of batches of pretrained models. This is 
-                        only for parallelized computing. If using a single 
-                        instance of this program, set nchunks_general to 1. 
-    which_chunk --> int, Selects the desired batch (by number). If using 
-                    multiple instances of this program, set this parameter to 
-                    'int(sys.argv[1])', for example.
-    save_model --> Boolean, Saves the model at the end of the training or not.
-    save_plot --> Boolean, Saves the plot at the end of the training or not.
-    epochs_general --> int, Number of training epochs. 
-    periodic_plots --> Boolean, Sets whether plots of the wave function are 
-                        periodically shown. 
-    show_arch --> Boolean, Sets whether the network architecture is printed at 
-                the beginning of each file.
-    leap --> int, Number of epochs between updates and/or plots.
-    recompute --> Boolean, Whether to train a model which had been already
-                trained.
-    
-    MESH PARAMETERS 
-    -----------------------------------
-    q_max --> float, Maximum value of the momentum axis.
-    n_samples --> int, Number of mesh points. DO NOT CHANGE THE DEFAULT VALUE.
-    train_a --> float, Lower limit of momentum.
-    train_b --> float, Upper limit of momentum. It is set to q_max by default.
-    
-    TRAINING HYPERPARAMETERS
-    -----------------------------------
-    actfuns --> List, Contains PyTorch-supported activation functions. 
-    optimizers --> List, Contains PyTorch-supported optimizers.
-    learning_rates --> List, Contains learning rates which must be specified 
-                    in decimal notation.
-    epsilon --> float, It appears in RMSProp and other optimizers.
-    smoothing_constant --> List, It appears in RMSProp and other optimizers.
-    momentum --> List, Contains values for the momentum of the optimizer.
-    
-    DEFAULT HYPERPARAM VALUES
-    -----------------------------------
-    default_actfun --> String, Default activation function.
-    default_optim --> String, Default optimizer.
-    default_lr --> float, Default learning rate.
-    default_alpha --> float, Default smoothing constant.
-    default_momentum --> float, Default momentum.
-    
 · In Section 'DIRECTORY SUPPORT' we define the directory structure where all 
 trained models will be stored.
 
@@ -80,15 +29,16 @@ pretrained model. At the end of this section we save the fully-trained model.
 """
 
 #################### IMPORTS ####################
-import pathlib, os, sys
-initial_dir = pathlib.Path(__file__).parent.resolve()
-os.chdir(initial_dir)
-sys.path.append('.')
-
+import os
+import sys
 import torch, time, math
 import numpy as np
 from tqdm import tqdm
 from itertools import product
+import argparse
+
+current = os.path.dirname(os.path.realpath(__file__))
+os.chdir(current)
 
 # My modules
 from modules.physical_constants import hbar, mu
@@ -97,23 +47,181 @@ import modules.integration as integration
 import modules.neural_networks as neural_networks
 from modules.plotters import minimisation_plots
 from modules.dir_support import dir_support
-from modules.aux_functions import train_loop, show_layers, split
+from modules.aux_functions import train_loop, show_layers, split, strtobool
 from modules.loss_functions import energy
+
+##################### ARGUMENTS #####################
+parser = argparse.ArgumentParser(
+    prog="deuteron.py",
+    usage="python3 %(prog)s [options]",
+    description="Trains two neural networks to match the deuteron S and D channels.",
+    epilog="Author: J Rozalén Sarmiento",
+)
+parser.add_argument(
+    "--dev",
+    help="Hardware device on which the code will run (default: cpu)",
+    default="cpu",
+    choices=["cpu", "gpu"],
+    type=str,
+)
+parser.add_argument(
+    "--save-model",
+    help="Whether to save the model after training or not (default: True)",
+    default=True,
+    choices=[True, False],
+    type=lambda x: bool(strtobool(x)),
+)
+parser.add_argument(
+    "--save-plot",
+    help="Whether to save the plot after training or not (default: True)",
+    default=True,
+    choices=[True, False],
+    type=lambda x: bool(strtobool(x)),
+)
+parser.add_argument(
+    "-e",
+    help="Number of epochs for the pretraining (default: 2000)",
+    default=250000,
+    type=int,
+)
+parser.add_argument(
+    "--periodic-plots",
+    help="Whether to periodically plot the wave functions during training or "
+    "not (default: False)",
+    default=False,
+    choices=[True, False],
+    type=lambda x: bool(strtobool(x)),
+)
+parser.add_argument(
+    "--archs",
+    help="List of NN architectures to train (default: 1sc 2sc 1sd 2sd)"
+    "WARNING: changing this might entail further code changes to ensure proper"
+    " functioning)",
+    default=["1sc", "2sc", "1sd", "2sd"],
+    nargs="*",
+    type=str
+)
+parser.add_argument(
+    "--show-arch",
+    help="Whether to display the NN architecture or not (default: False)",
+    default=False,
+    choices=[True, False],
+    type=lambda x: bool(strtobool(x)),
+)
+parser.add_argument(
+    "--leap",
+    help="Number of epochs between updates/plots (default: 500)",
+    default=500,
+    type=int,
+)
+parser.add_argument(
+    "--recompute",
+    help="Whether to recompute models which have been already trained and "
+    "saved to disk (default: False)",
+    default=False,
+    choices=[True, False],
+    type=lambda x: bool(strtobool(x)),
+)
+parser.add_argument(
+    "--shards",
+    help="Number of shards in which to split all computations (default: 1)",
+    default=1,
+    type=int,
+)
+parser.add_argument(
+    "--shard-number",
+    help="Shard number corresponding to this instance of the code (default: 0)",
+    default=0,
+    type=int,
+)
+parser.add_argument(
+    "--hidden-nodes",
+    help="List of hidden node numbers to use (default: 20 30 40 60 80 100)",
+    default=[20, 30, 40, 60, 80, 100],
+    nargs="*",
+    type=int
+)
+parser.add_argument(
+    "--activations",
+    help="List of activation functions (default: Sigmoid Softplus ReLU)",
+    default=["Sigmoid", "Softplus", "ReLU"],
+    nargs="*",
+)
+parser.add_argument(
+    "--optimizers",
+    help="List of optimizers (default: RMSprop)",
+    default=["RMSprop"],
+    nargs="*",
+)
+parser.add_argument(
+    "--lrs",
+    help="List of learning rates (default: 0.005 0.01 0.05)",
+    default=[0.005, 0.01, 0.05],
+    nargs="*",
+    type=float
+)
+parser.add_argument(
+    "--alphas",
+    help="List of smoothing constants (default: 0.7 0.8 0.9)",
+    default=[0.7, 0.8, 0.9],
+    nargs="*",
+    type=float
+)
+parser.add_argument(
+    "--mus",
+    help="List of momentum values (default: 0.0 0.9)",
+    default=[0.0, 0.9],
+    nargs="*",
+    type=float
+)
+parser.add_argument(
+    "--compile",
+    help="Whether to pre-compile the NN calculatiosn or not (default: False)",
+    default=False,
+    choices=[True, False],
+    type=lambda x: bool(strtobool(x))
+)
+parser.add_argument(
+    "--plot",
+    help="Whether to show a plot of different metrics at the end of each "
+    "training (default: False)",
+    default=False,
+    choices=[True, False],
+    type=lambda x: bool(strtobool(x))
+)
+parser.add_argument(
+    "--explore-hyperparams",
+    help="Whether to train for the different combinations of hyperparameters "
+    "specified or not (default: False). WARNING: this action will disable "
+    "hyperparameter exploration even if lists of hyperparameters were given.",
+    default=False,
+    choices=[True, False],
+    type=lambda x: bool(strtobool(x))
+)
+args = parser.parse_args()
 
 #################### ADJUSTABLE PARAMETERS ####################
 # General parameters
-net_archs = ['1sc', '2sc', '1sd', '2sd']
-device = 'cpu' 
-nchunks_general = 1
-which_chunk = int(sys.argv[1]) if nchunks_general != 1 else 0
-save_model = True  
-save_plot = True
-epochs_general = 250000 
-periodic_plots = False
-show_arch = False
-show_last_plot = False
-leap = 5000
-recompute = False
+net_archs = args.archs
+device = args.dev
+if device == "gpu":
+    if torch.cuda.is_available():
+        device = "cuda"
+    else:
+        print("There was an error trying to use the GPU. Falling back to CPU...")
+        device = "cpu"
+shards = args.shards
+shard_number = args.shard_number if args.shards != 1 else 0
+save_model = args.save_model
+save_plot = args.save_plot
+epochs_general = args.e
+periodic_plots = args.periodic_plots
+show_arch = args.show_arch
+leap = args.leap
+recompute = args.recompute
+show_last_plot = args.plot
+hidden_neurons = args.hidden_nodes
+
 
 # Mesh parameters
 q_max = 500
@@ -122,12 +230,12 @@ train_a = 0
 train_b = q_max
 
 # Training hyperparameters
-actfuns = ['Sigmoid', 'Softplus', 'ReLU']
-optimizers = ['RMSprop']
-learning_rates = [0.005, 0.01, 0.05] # Use decimal notation 
+actfuns = args.activations
+optimizers = args.optimizers
+learning_rates = args.lrs  # Use decimal notation
 epsilon = 1e-8
-smoothing_constant = [0.7, 0.8, 0.9]
-momentum = [0.0, 0.9]
+smoothing_constant = args.alphas
+momentum = args.mus
 
 # Default hyperparam values
 default_actfun = 'Sigmoid'
@@ -136,9 +244,14 @@ default_lr = 0.01
 default_alpha = 0.9
 default_momentum = 0.0
 
+if not args.explore_hyperparams:
+    actfuns = [default_actfun]
+    optimizers = [default_optim]
+    learning_rates = [default_lr]
+    smoothing_constant = [default_alpha]
+    momentum = [default_momentum]
+
 #################### DIRECTORY SUPPORT ####################
-hidden_neurons = [20, 30, 40, 60, 80, 100]
-# The code handles the 30 <--> 32 conversion
 
 path_steps = ['saved_models',
              'n3lo',
@@ -174,7 +287,7 @@ q_2 = Q_train**2 # Squared momentum mesh
 n3lo = N3LO.N3LO('deuteron_data/2d_vNN_J1.dat', 'deuteron_data/wfk.dat')
 V_ij = n3lo.getPotential()
 
-# Target wavefunction (A. Rios, James W.T. Keeble)
+# Target wavefunction (A Rios, J W T Keeble)
 psi_target_s = n3lo.getWavefunction()[1].squeeze(1)
 psi_target_d = n3lo.getWavefunction()[2].squeeze(1)   
 psi_target_s_norm = integration.gl64(q_2*(psi_target_s)**2, w_i)
@@ -272,8 +385,7 @@ for arch, Nhid, optim, actfun, lr, alpha, mom in product(net_archs,
             (optim == default_optim and
             actfun == default_actfun and
             lr == default_lr and
-            alpha == default_alpha and not
-            (arch == '2sd' and mom == 0.9))))):
+            alpha == default_alpha)))):
         # print('Skipping non-whitelisted hyperparam combination...')
         continue
 
@@ -317,33 +429,36 @@ for arch, Nhid, optim, actfun, lr, alpha, mom in product(net_archs,
                             f'alpha{alpha}', 
                             f'mu{mom}',
                             'plots']
-        if save_model:
-            dir_support(path_steps_models)
-        if save_plot:
-            dir_support(path_steps_plots)   
+        dir_support(path_steps_models)
+        dir_support(path_steps_plots)   
 
     saved_models_dir = '/'.join(path_steps_models) + '/'
     list_of_saved_models = os.listdir(saved_models_dir)
-    seeds_list = []
+    list_of_models = []
+    list_of_seeds = []
     if recompute == False:
-        # We keep a list of pretrained models that include only those which 
+        # We keep a list of pretrained models that include only those which
         # have not been trained
-        for pm in list_of_pretrained_models[:]:
+        for pm in os.listdir(path_to_pretrained_model):
             seed = int(pm.split('_')[0].replace('seed', ''))
-            seeds_list.append(seed)
             name_without_dirs = f'seed{seed}_epochs{epochs}.pt'
-            if name_without_dirs in list_of_saved_models:
-                list_of_pretrained_models.remove(pm)
-    max_seed = max(seeds_list)
-    list_of_pretrained_models.sort(key=num_sort)
-    n_pre_models = len(list_of_pretrained_models)
-    if nchunks_general > n_pre_models:
-        nchunks = n_pre_models  
-    else: 
-        nchunks = nchunks_general
-    if which_chunk >= nchunks:
-        continue
-    for file in split(list_of_pretrained_models, nchunks)[which_chunk]: 
+            if name_without_dirs not in list_of_saved_models:
+                list_of_models.append(pm)
+                list_of_seeds.append(seed)
+        if len(list_of_models) == 0: 
+            print(f"All specified models are already"
+                " trained. Finishing process...")
+            sys.exit(0)
+        list_of_seeds.sort()
+
+    # Sanitizing shard numbers
+    if shard_number >= shards:
+        print(f"You are asking for shard number {shard_number}, but there "
+              f"are only {shards} shards. Finishing process... ")
+        break
+
+    # Loop over files
+    for file in split(l=list_of_models, n=shards)[shard_number]: 
         """"We iterate over all the pretrained models in the specified route 
         above, and we extract the hyperparameters Nhid, seed, learning_rate 
         from the name of the file."""
@@ -362,7 +477,7 @@ for arch, Nhid, optim, actfun, lr, alpha, mom in product(net_archs,
             continue             
         print(f'\nArch = {arch}, Neurons = {Nhid}, Actfun = {actfun}, ' \
                 f'lr = {lr}, Alpha = {alpha}, Mu = {mom}, ' \
-                  f'Seed = {seed}/{max_seed}')
+                  f'Seed = {seed} ({list_of_seeds.index(seed)}/{len(list_of_seeds)})')
         
         # ANN Parameters
         if arch == '1sc':
@@ -383,6 +498,7 @@ for arch, Nhid, optim, actfun, lr, alpha, mom in product(net_archs,
         # We load our NN and optimizer to the CPU (or GPU)
         psi_ann = net_arch_map[arch](Nin, Nhid_prime, Nout, W1, 
                                      Ws2, B, W2, Wd2, actfun).to(device)
+        psi_ann = torch.compile(psi_ann) if args.compile else psi_ann
         optimizer = getattr(torch.optim, optim)(params=psi_ann.parameters(),
                                         lr=lr,
                                         eps=epsilon,
@@ -410,14 +526,15 @@ for arch, Nhid, optim, actfun, lr, alpha, mom in product(net_archs,
         
         start_time = time.time()
         # Training loop
-        for t in tqdm(range(epochs)):        
+        pbar = tqdm(range(epochs), desc="Training...", dynamic_ncols=True)
+        for t in pbar:        
             (E, ann_s, ann_d, norm2, 
              K, U, ks, kd, pd) = train_loop(loss_fn=loss_fn,
                                             optimizer=optimizer,
                                             model=psi_ann,
                                             train_data=Q_train, 
-                                            q_2=q_2, 
-                                            arch=arch, 
+                                            q_2=q_2,
+                                            arch=arch,
                                             integration=integration,
                                             w_i=w_i,
                                             q2_128=q2_128,
@@ -433,6 +550,8 @@ for arch, Nhid, optim, actfun, lr, alpha, mom in product(net_archs,
             ks_accum.append(ks.item())
             kd_accum.append(kd.item())
             pd_accum.append(pd.item())
+            
+            pbar.set_postfix_str(f"E = {E:.4f}, K={K:.4f}, U={U:.4f}")
             
             # Plotting
             if (((t+1) % leap) == 0 and periodic_plots) or t == epochs-1:
@@ -462,7 +581,10 @@ for arch, Nhid, optim, actfun, lr, alpha, mom in product(net_archs,
                                    t=t,
                                    s=save_plot if t == epochs -1 else False,
                                    show=show) 
-    
+                
+            pbar.update(1)
+
+        pbar.close()
         print('\nModel trained!')
         print('Total execution time:  {:6.2f} seconds ' \
               '(run on {})'.format(time.time() - start_time_all, device))
