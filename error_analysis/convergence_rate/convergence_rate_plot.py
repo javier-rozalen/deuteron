@@ -41,20 +41,111 @@ does.
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator)
 from itertools import product
+import os
+import sys
+import argparse
+
+# PYTHONPATH additions
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+parent_parent = os.path.dirname(parent)
+sys.path.append(parent_parent)
+
+current = os.path.dirname(os.path.realpath(__file__))
+os.chdir(current)
+
+# My modules
+from modules.aux_functions import strtobool
+
+
+##################### ARGUMENTS #####################
+parser = argparse.ArgumentParser(
+    prog="convergence_rate_plot.py",
+    usage="python3 %(prog)s [options]",
+    description="Generates the convergence rate plot.",
+    epilog="Author: J Rozalén Sarmiento",
+)
+parser.add_argument(
+    "--explore-hyperparams",
+    help="Whether to train for the different combinations of hyperparameters "
+    "specified or not (default: False). WARNING: this action will disable "
+    "hyperparameter exploration even if lists of hyperparameters were given.",
+    default=False,
+    choices=[True, False],
+    type=lambda x: bool(strtobool(x))
+)
+parser.add_argument(
+    "--save-plot",
+    help="Whether to save the plot or not (default: True)",
+    default=True,
+    choices=[True, False],
+    type=lambda x: bool(strtobool(x)),
+)
+parser.add_argument(
+    "--archs",
+    help="List of NN architectures to train (default: 1sc 2sc 1sd 2sd)"
+    "WARNING: changing this might entail further code changes to ensure proper"
+    " functioning)",
+    default=["1sc", "2sc", "1sd", "2sd"],
+    nargs="*",
+    type=str
+)
+parser.add_argument(
+    "--hidden-nodes",
+    help="List of hidden node numbers to use (default: 20 30 40 60 80 100)",
+    default=[20, 30, 40, 60, 80, 100],
+    nargs="*",
+    type=int
+)
+parser.add_argument(
+    "--activations",
+    help="List of activation functions (default: Sigmoid Softplus ReLU)",
+    default=["Sigmoid", "Softplus", "ReLU"],
+    nargs="*",
+)
+parser.add_argument(
+    "--optimizers",
+    help="List of optimizers (default: RMSprop)",
+    default=["RMSprop"],
+    nargs="*",
+)
+parser.add_argument(
+    "--lrs",
+    help="List of learning rates (default: 0.005 0.01 0.05)",
+    default=[0.005, 0.01, 0.05],
+    nargs="*",
+    type=float
+)
+parser.add_argument(
+    "--alphas",
+    help="List of smoothing constants (default: 0.7 0.8 0.9)",
+    default=[0.7, 0.8, 0.9],
+    nargs="*",
+    type=float
+)
+parser.add_argument(
+    "--mus",
+    help="List of momentum values (default: 0.0 0.9)",
+    default=[0.0, 0.9],
+    nargs="*",
+    type=float
+)
+args = parser.parse_args()
+
 
 #################### ADJUSTABLE PARAMETERS ####################
 # General parameters
-net_archs = ['1sc', '2sc', '1sd', '2sd']
-save_plot = True
+net_archs = args.archs
+save_plot = args.save_plot
 path_of_plot = '../../saved_plots/convergence_rate.pdf'
 
 # Variable hyperparameters
-hidden_neurons = [20, 30, 40, 60, 80, 100]
-actfuns = ['Sigmoid', 'Softplus', 'ReLU']
-optimizers = ['RMSprop']
-learning_rates = [0.005, 0.01, 0.05] # Use decimal notation 
-smoothing_constant = [0.7, 0.8, 0.9]
-momentum = [0.0, 0.9]
+hidden_neurons = args.hidden_nodes
+actfuns = args.activations
+optimizers = args.optimizers
+learning_rates = args.lrs 
+smoothing_constant = args.alphas
+momentum = args.mus
 
 # Default values of hyperparameters
 default_actfun = 'Sigmoid'
@@ -62,6 +153,13 @@ default_optim = 'RMSprop'
 default_lr = 0.01
 default_alpha = 0.9
 default_momentum = 0.0
+
+if not args.explore_hyperparams:
+    actfuns = [default_actfun]
+    optimizers = [default_optim]
+    learning_rates = [default_lr]
+    smoothing_constant = [default_alpha]
+    momentum = [default_momentum]
 
 ########################## PLOTTING ##########################
 fig, ax = plt.subplots()
@@ -117,4 +215,4 @@ fig.legend(loc='lower center', bbox_to_anchor=(0.84, 0.34), ncol=1,
 
 if save_plot:
     plt.savefig(path_of_plot, format='pdf', bbox_inches='tight')
-    print(f'Figure saved in {path_of_plot}')
+    print('Figure saved in deuteron/saved_plots/convergence_rate.pdf')
