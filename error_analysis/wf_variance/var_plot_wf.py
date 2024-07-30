@@ -27,14 +27,50 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.ticker import (FormatStrFormatter, AutoMinorLocator, 
                                AutoLocator)
+import os
+import sys
+import argparse
+
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+parent_parent = os.path.dirname(parent)
+sys.path.append(parent_parent)
+os.chdir(current)
 
 # My modules
-import N3LO
+import modules.N3LO as N3LO
+from modules.aux_functions import strtobool
+
+##################### ARGUMENTS #####################
+parser = argparse.ArgumentParser(
+    prog="var_plot_wf.py",
+    usage="python3 %(prog)s [options]",
+    description="Generates a plot displaying the variance of different NN "
+    "wave functions.",
+    epilog="Author: J Rozalén Sarmiento",
+)
+parser.add_argument(
+    "--save-plot",
+    help="Whether to save the plot or not (default: True)",
+    default=True,
+    choices=[True, False],
+    type=lambda x: bool(strtobool(x))
+)
+parser.add_argument(
+    "--archs",
+    help="List of NN architectures to train (default: 1sc 2sc 1sd 2sd)"
+    "WARNING: changing this might entail further code changes to ensure proper"
+    " functioning)",
+    default=["1sc", "2sc", "1sd", "2sd"],
+    nargs="*",
+    type=str
+)
+args = parser.parse_args()
 
 #################### ADJUSTABLE PARAMETERS ####################
 # General parameters
-save_plot = True
-net_archs = ['1sc', '2sc', '1sd', '2sd']
+save_plot = args.save_plot
+net_archs = args.archs
 
 #################### DATA PREPARATION ####################
 # Uniform mesh with 1000 points
